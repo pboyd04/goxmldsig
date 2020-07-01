@@ -10,7 +10,7 @@ XML Digital Signatures implemented in pure Go.
 Install `goxmldsig` into your `$GOPATH` using `go get`:
 
 ```
-$ go get github.com/russellhaering/goxmldsig
+$ go get github.com/pboyd04/goxmldsig
 ```
 
 ## Usage
@@ -22,7 +22,7 @@ package main
 
 import (
     "github.com/beevik/etree"
-    "github.com/russellhaering/goxmldsig"
+    "github.com/pboyd04/goxmldsig"
 )
 
 func main() {
@@ -66,7 +66,7 @@ func validate(root *x509.Certificate, el *etree.Element) {
 
     // It is important to only use the returned validated element.
     // See: https://www.w3.org/TR/xmldsig-bestpractices/#check-what-is-signed
-    validated, err := ctx.Validate(el)
+    validated, cert, err := ctx.ValidateWithRootTrust(el)
     if err != nil {
         panic(err)
     }
