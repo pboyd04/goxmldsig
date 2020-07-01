@@ -497,19 +497,23 @@ func (ctx *ValidationContext) Validate(el *etree.Element) (*etree.Element, error
 }
 
 // ValidateWithRootTrust does the same as Verify except it actually verifies the root CA is trusted as well
-func (ctx *ValidationContext) ValidateWithRootTrust(el *etree.Element) (*etree.Element, error) {
+func (ctx *ValidationContext) ValidateWithRootTrust(el *etree.Element) (*etree.Element, *x509.Certificate, error) {
 	// Make a copy of the element to avoid mutating the one we were passed.
 	el = el.Copy()
 
 	sig, err := ctx.findSignature(el)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	cert, err := ctx.verifyCertificate(sig, true)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return ctx.validateSignature(el, sig, cert)
+	retEl, err := ctx.validateSignature(el, sig, cert)
+	if err != nil {
+		return nil, nil, err
+	}
+	return retEl, cert, nil
 }
