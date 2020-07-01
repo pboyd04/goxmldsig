@@ -10,8 +10,8 @@ import (
 	"regexp"
 
 	"github.com/beevik/etree"
-	"github.com/russellhaering/goxmldsig/etreeutils"
-	"github.com/russellhaering/goxmldsig/types"
+	"github.com/pboyd04/goxmldsig/internal/etreeutils"
+	"github.com/pboyd04/goxmldsig/internal/types"
 )
 
 var uriRegexp = regexp.MustCompile("^#[a-zA-Z_][\\w.-]*$")
@@ -201,6 +201,15 @@ func (ctx *ValidationContext) verifySignedInfo(sig *types.Signature, canonicaliz
 	if signedInfo == nil {
 		return errors.New("Missing SignedInfo")
 	}
+
+	attrs := make([]etree.Attr, 0)
+	for _, a := range signedInfo.Attr {
+		if a.Value == Namespace {
+			attrs = append(attrs, a)
+			break
+		}
+	}
+	signedInfo.Attr = attrs
 
 	// Canonicalize the xml
 	canonical, err := canonicalSerialize(signedInfo)
