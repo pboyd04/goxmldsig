@@ -145,7 +145,6 @@ func TestDigest(t *testing.T) {
 	digest, err = vc.digest(doc.Root(), "http://www.w3.org/2001/04/xmlenc#sha256", canonicalizer)
 	require.NoError(t, err)
 	require.Equal(t, "npTAl6kraksBlCRlunbyD6nICTcfsDaHjPXVxoDPrw0=", base64.StdEncoding.EncodeToString(digest))
-
 }
 
 func TestTransform(t *testing.T) {

@@ -1,6 +1,7 @@
 package dsig
 
 import (
+	"regexp"
 	"sort"
 
 	"github.com/beevik/etree"
@@ -26,7 +27,14 @@ func (c *NullCanonicalizer) Algorithm() AlgorithmID {
 
 func (c *NullCanonicalizer) Canonicalize(el *etree.Element) ([]byte, error) {
 	scope := make(map[string]struct{})
-	return canonicalSerialize(canonicalPrep(el, scope, false))
+	ret, err := canonicalSerialize(canonicalPrep(el, scope, false))
+	if err != nil {
+		return nil, err
+	}
+	//This will remove all XML comments but leave the line and indentation where they were
+	var remComments = regexp.MustCompile(`<!--[\s\S]*?-->`)
+	ret = remComments.ReplaceAll(ret, []byte(""))
+	return ret, nil
 }
 
 type c14N10ExclusiveCanonicalizer struct {
@@ -104,19 +112,6 @@ func (c *c14N10CommentCanonicalizer) Canonicalize(el *etree.Element) ([]byte, er
 
 func (c *c14N10CommentCanonicalizer) Algorithm() AlgorithmID {
 	return CanonicalXML10CommentAlgorithmId
-}
-
-func composeAttr(space, key string) string {
-	if space != "" {
-		return space + ":" + key
-	}
-
-	return key
-}
-
-type c14nSpace struct {
-	a    etree.Attr
-	used bool
 }
 
 const nsSpace = "xmlns"

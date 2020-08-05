@@ -14,8 +14,7 @@ import (
 	"github.com/pboyd04/goxmldsig/internal/types"
 )
 
-var uriRegexp = regexp.MustCompile("^#[a-zA-Z_][\\w.-]*$")
-var whiteSpace = regexp.MustCompile("\\s+")
+var whiteSpace = regexp.MustCompile(`\s+`)
 
 var (
 	// ErrMissingSignature indicates that no enveloped signature was found referencing
@@ -34,21 +33,6 @@ func NewDefaultValidationContext(certificateStore X509CertificateStore) *Validat
 		CertificateStore: certificateStore,
 		IdAttribute:      DefaultIdAttr,
 	}
-}
-
-// TODO(russell_h): More flexible namespace support. This might barely work.
-func inNamespace(el *etree.Element, ns string) bool {
-	for _, attr := range el.Attr {
-		if attr.Value == ns {
-			if attr.Space == "" && attr.Key == "xmlns" {
-				return el.Space == ""
-			} else if attr.Space == "xmlns" {
-				return el.Space == attr.Key
-			}
-		}
-	}
-
-	return false
 }
 
 func childPath(space, tag string) string {
@@ -305,7 +289,6 @@ func (ctx *ValidationContext) findSignature(el *etree.Element) (*types.Signature
 
 	// Traverse the tree looking for a Signature element
 	err := etreeutils.NSFindIterate(el, Namespace, SignatureTag, func(ctx etreeutils.NSContext, el *etree.Element) error {
-
 		found := false
 		err := etreeutils.NSFindChildrenIterateCtx(ctx, el, Namespace, SignedInfoTag,
 			func(ctx etreeutils.NSContext, signedInfo *etree.Element) error {
