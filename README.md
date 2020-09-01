@@ -88,3 +88,5 @@ This library was created in order to [implement SAML 2.0](https://github.com/rus
 without needing to execute a command line tool to create and validate signatures. It currently
 only implements the subset of relevant standards needed to support that implementation, but
 I hope to make it more complete over time. Contributions are welcome.
+
+This has been expanded somewhat to validate a different format of signed XML file for use in another project, but is still only a subset of the standard. 
