@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"time"
 
 	"github.com/beevik/etree"
 	"github.com/pboyd04/goxmldsig/internal/etreeutils"
@@ -381,7 +382,7 @@ func (ctx *ValidationContext) findSignature(el *etree.Element) (*types.Signature
 	return sig, nil
 }
 
-func (ctx *ValidationContext) verifyCertificate(sig *types.Signature, verify bool) (*x509.Certificate, error) {
+func (ctx *ValidationContext) verifyCertificate(sig *types.Signature, verify bool, timecheck bool) (*x509.Certificate, error) {
 	now := ctx.Clock.Now()
 
 	roots, err := ctx.CertificateStore.Certificates()
@@ -426,6 +427,10 @@ func (ctx *ValidationContext) verifyCertificate(sig *types.Signature, verify boo
 			Roots:     pool,
 			KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageCodeSigning},
 		}
+		if !timecheck {
+			//If not doing the time check just set the time to 1 minute after the cert becomes valid...
+			opts.CurrentTime = cert.NotBefore.Add(1*time.Minute)
+		}
 
 		_, err := cert.Verify(opts)
 		if err != nil {
@@ -437,7 +442,7 @@ func (ctx *ValidationContext) verifyCertificate(sig *types.Signature, verify boo
 		}
 	}
 
-	if now.Before(cert.NotBefore) || now.After(cert.NotAfter) {
+	if timecheck && (now.Before(cert.NotBefore) || now.After(cert.NotAfter)) {
 		return nil, errors.New("Cert is not valid at this time")
 	}
 
@@ -455,7 +460,7 @@ func (ctx *ValidationContext) Validate(el *etree.Element) (*etree.Element, error
 		return nil, err
 	}
 
-	cert, err := ctx.verifyCertificate(sig, false)
+	cert, err := ctx.verifyCertificate(sig, false, true)
 	if err != nil {
 		return nil, err
 	}
@@ -473,7 +478,29 @@ func (ctx *ValidationContext) ValidateWithRootTrust(el *etree.Element) (*etree.E
 		return nil, nil, err
 	}
 
-	cert, err := ctx.verifyCertificate(sig, true)
+	cert, err := ctx.verifyCertificate(sig, true, true)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	retEl, err := ctx.validateSignature(el, sig, cert)
+	if err != nil {
+		return nil, nil, err
+	}
+	return retEl, cert, nil
+}
+
+// ValidateWithRootTrustNoTime does the same as ValidateWithRootTrust except it does not care if the certificate is expired
+func (ctx *ValidationContext) ValidateWithRootTrustNoTime(el *etree.Element) (*etree.Element, *x509.Certificate, error) {
+	// Make a copy of the element to avoid mutating the one we were passed.
+	el = el.Copy()
+
+	sig, err := ctx.findSignature(el)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	cert, err := ctx.verifyCertificate(sig, true, false)
 	if err != nil {
 		return nil, nil, err
 	}
